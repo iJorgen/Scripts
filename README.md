@@ -1,2 +1,2 @@
 # citypolarna
-Optimizations of Citypolarna.se
+TamperMonkey optimizations of Citypolarna.se
