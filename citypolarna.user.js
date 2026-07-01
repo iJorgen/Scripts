@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Citypolarna - Optimized
 // @namespace    https://citypolarna.se
-// @version      1.1
+// @version      1.2
 // @description  Grupperar "Mina aktiviteter" + färgmarkerar plus/open/private + OLED-black + separata mobilfärger + grupperingstoggle
 // @author       Jörgen
 // @match        https://www.citypolarna.se/*
@@ -13,6 +13,12 @@
 
 (function () {
   'use strict';
+
+  // ── OLED-tröskelvärden — justera fritt ──────────────────────────────────
+  // isNearlyWhite: kanaler >= detta värde räknas som "nästan vit" text
+  const OLED_WHITE_THRESHOLD = 180;
+  // isNearlyBlack: kanaler <= detta värde räknas som "nästan svart" bakgrund
+  const OLED_BLACK_THRESHOLD = 30;
 
   // ── Persisterat tillstånd för gruppering ─────────────────────────────────
   const STORAGE_KEY = 'citypolarna_grouping';
@@ -62,12 +68,6 @@
     },
   };
 
-  // ── OLED-black — justera fritt ───────────────────────────────────────────
-  const oled = {
-    bgReplace:   ['rgb(17, 17, 17)'],
-    textReplace: ['rgb(221, 221, 221)', 'rgb(247, 247, 247)', 'rgb(250, 250, 250)'],
-  };
-
   const DATE_CLASSES = [
     'event_row__primary_date',
     'event_row__secondary_date',
@@ -76,14 +76,13 @@
   ];
 
   // ── Spara originalordningen innan vi rör DOM ──────────────────────────────
-  // Används för att återställa "default"-listan utan att ladda om sidan.
   let savedOriginalRows = null;
 
   // ── Klassificera en rad baserat på SVG-id ────────────────────────────────
   function classifyRow(row) {
     const svgId = row.querySelector('td.event_row__status svg')?.id ?? '';
-    if (svgId === 'icon_coming')   return 'anmald';
-    if (svgId === 'icon_reserv')   return 'reserv';
+    if (svgId === 'icon_coming') return 'anmald';
+    if (svgId === 'icon_reserv') return 'reserv';
     if (svgId === 'icon_unbooked') return 'intresserad';
     return 'default';
   }
@@ -92,7 +91,7 @@
   function getPalette(table, cat, isMobile) {
     const scheme = isMobile ? colorsMobile : colorsDesktop;
     if (table.classList.contains('plus_event')) return scheme.plus[cat];
-    if (table.classList.contains('private'))    return scheme.private[cat];
+    if (table.classList.contains('private')) return scheme.private[cat];
     return scheme.open[cat];
   }
 
@@ -127,12 +126,11 @@
     const tables = row.querySelectorAll('table.event_row_table');
     if (!tables.length) return;
 
-    // plus_event/private-klass sitter alltid på desktop-tabellen (index 0)
     const typeTable = tables[0];
 
     tables.forEach(table => {
       const isMobile = table.classList.contains('mobile');
-      const palette  = getPalette(typeTable, cat, isMobile);
+      const palette = getPalette(typeTable, cat, isMobile);
       colorRow(table, palette);
     });
   }
@@ -149,7 +147,7 @@
   // ── Skapa sektionsrubrik ─────────────────────────────────────────────────
   function makeSectionHeader(text, color) {
     const h = document.createElement('div');
-    h.dataset.groupHeader = '1'; // markör så vi lätt kan ta bort dem
+    h.dataset.groupHeader = '1';
     h.style.cssText = `
       font-size: 1.1em;
       font-weight: bold;
@@ -168,7 +166,6 @@
     const rows = [...wrapperDiv.querySelectorAll(':scope > div.event_row_table')];
     if (!rows.length) return;
 
-    // Spara originalordning första gången (före vi rör DOM)
     if (!savedOriginalRows) {
       savedOriginalRows = rows.slice();
     }
@@ -180,17 +177,15 @@
       groups[cat].push(row);
     }
 
-    // Färglägg alla kategorier
     for (const [cat, rowList] of Object.entries(groups)) {
       for (const row of rowList) colorRowTables(row, cat);
     }
 
-    // Bygg om DOM med sektionsrubriker
     wrapperDiv.innerHTML = '';
 
     const sections = [
-      { key: 'anmald',      label: '✅ Anmäld',      color: '#2a7a2a' },
-      { key: 'reserv',      label: '🟡 Reserv',      color: '#b07800' },
+      { key: 'anmald', label: '✅ Anmäld', color: '#2a7a2a' },
+      { key: 'reserv', label: '🟡 Reserv', color: '#b07800' },
       { key: 'intresserad', label: '👁 Intresserad', color: '#aa0000' },
     ];
 
@@ -200,21 +195,17 @@
       for (const row of groups[key]) wrapperDiv.appendChild(row);
     }
 
-    // Okategoriserade rader läggs sist, utan rubrik
     for (const row of groups.default) wrapperDiv.appendChild(row);
   }
 
   // ── Återställ originalordning + färglägg utan gruppering ─────────────────
   function applyUngrouped(wrapperDiv) {
-    // Ta bort sektionsrubriker
     wrapperDiv.querySelectorAll('[data-group-header]').forEach(h => h.remove());
 
-    // Återställ originalordningen om vi har den sparad
     if (savedOriginalRows) {
       savedOriginalRows.forEach(row => wrapperDiv.appendChild(row));
     }
 
-    // Färglägg i originalordning (färger alltid aktiva)
     colorSection(wrapperDiv);
   }
 
@@ -232,15 +223,82 @@
   }
 
   // ── OLED-black: ersätt nästan-svart bakgrund och nästan-vit text ─────────
-  function applyOled() {
-    document.querySelectorAll('*').forEach(el => {
+  function isNearlyWhite(rgb) {
+    const m = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+    if (!m) return false;
+    return parseInt(m[1]) >= OLED_WHITE_THRESHOLD &&
+           parseInt(m[2]) >= OLED_WHITE_THRESHOLD &&
+           parseInt(m[3]) >= OLED_WHITE_THRESHOLD;
+  }
+
+  function isNearlyBlack(rgb) {
+    const m = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+    if (!m) return false;
+    return parseInt(m[1]) <= OLED_BLACK_THRESHOLD &&
+           parseInt(m[2]) <= OLED_BLACK_THRESHOLD &&
+           parseInt(m[3]) <= OLED_BLACK_THRESHOLD;
+  }
+
+  function applyOled(root = document) {
+    root.querySelectorAll('*').forEach(el => {
       const cs = getComputedStyle(el);
-      if (oled.bgReplace.includes(cs.backgroundColor)) {
+
+      if (isNearlyBlack(cs.backgroundColor)) {
         el.style.setProperty('background-color', '#000000', 'important');
       }
-      if (oled.textReplace.includes(cs.color)) {
+      if (isNearlyWhite(cs.color)) {
         el.style.setProperty('color', '#ffffff', 'important');
       }
+    });
+  }
+
+  // ── Observera dynamiskt injicerat innehåll och applicera OLED direkt ─────
+  let oledObserver = null;
+
+  function applyOledToNode(node) {
+    if (node.nodeType !== 1) return;
+    const cs = getComputedStyle(node);
+    if (isNearlyBlack(cs.backgroundColor)) {
+      node.style.setProperty('background-color', '#000000', 'important');
+    }
+    if (isNearlyWhite(cs.color)) {
+      node.style.setProperty('color', '#ffffff', 'important');
+    }
+    node.querySelectorAll('*').forEach(el => {
+      const s = getComputedStyle(el);
+      if (isNearlyBlack(s.backgroundColor)) {
+        el.style.setProperty('background-color', '#000000', 'important');
+      }
+      if (isNearlyWhite(s.color)) {
+        el.style.setProperty('color', '#ffffff', 'important');
+      }
+    });
+  }
+
+  function observeOled() {
+    if (oledObserver) return;
+
+    oledObserver = new MutationObserver(mutations => {
+      const added = new Set();
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (node.nodeType === 1) added.add(node);
+        }
+        if (mutation.type === 'attributes' && mutation.target.nodeType === 1) {
+          added.add(mutation.target);
+        }
+      }
+      if (added.size === 0) return;
+      Promise.resolve().then(() => {
+        added.forEach(applyOledToNode);
+      });
+    });
+
+    oledObserver.observe(document.body, {
+      childList:       true,
+      subtree:         true,
+      attributes:      true,
+      attributeFilter: ['style', 'class'],
     });
   }
 
@@ -257,7 +315,6 @@
 
   // ── Toggle-knapp ─────────────────────────────────────────────────────────
   function createToggleButton() {
-    // Skapa inte dubbelt om knappen redan finns
     if (document.getElementById('cp-group-toggle')) return;
 
     const btn = document.createElement('button');
@@ -318,12 +375,6 @@
   }
 
   // ── Deterministisk trigger — väntar på att sidans JS satt typ-klasserna ──
-  //
-  // Sidans JS sätter open/plus_event/private på table.event_row_table
-  // som sista steg. Vi observerar tills minst EN sådan tabell finns,
-  // kör sedan i en microtask (Promise.resolve) för att säkerställa att
-  // hela mutations-batchen är processad — ingen fast setTimeout-gissning.
-
   function isReady() {
     const wrapper = document.querySelector('#my_event_list');
     if (!wrapper) return false;
@@ -334,6 +385,12 @@
     ) !== null;
   }
 
+  // ── Kör OLED direkt — fungerar på alla sidor, även utan kalendervy ───────
+  function runOledImmediate() {
+    applyOled();
+    observeOled();
+  }
+
   let triggered = false;
 
   function tryRun() {
@@ -341,7 +398,6 @@
     if (!isReady()) return;
     triggered = true;
     observer.disconnect();
-    // Microtask: kör efter att hela mutations-batchen är klar
     Promise.resolve().then(run);
   }
 
@@ -353,6 +409,9 @@
     attributes:      true,
     attributeFilter: ['class'],
   });
+
+  // OLED körs alltid direkt — oavsett om kalendervy finns eller ej
+  runOledImmediate();
 
   // Fallback: om sidan redan var redo när skriptet laddades
   tryRun();
