@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Citypolarna Deluxe
 // @namespace    https://citypolarna.se
-// @version      1.6.3
+// @version      1.6.4
 // @description  Grupperar "Mina aktiviteter" + färgmarkerar plus/open/private/tips/draft + OLED-black + separata mobilfärger + grupperingstoggle
 // @author       Jörgen
 // @license      MIT
@@ -26,7 +26,6 @@
   let groupingEnabled = localStorage.getItem(STORAGE_KEY) !== 'false';
 
   // ── Färgtabell Desktop — justera fritt ──────────────────────────────────
-  const colorsDesktop = {
   const colorsDesktop = {
     plus: {
       anmald:      { bg: '#3a157a', left: '#3a157a', date: '#222222' },
