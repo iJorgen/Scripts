@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Citypolarna - Optimized
 // @namespace    https://citypolarna.se
-// @version      1.3
+// @version      1.4
 // @description  Grupperar "Mina aktiviteter" + färgmarkerar plus/open/private/tips/draft + OLED-black + separata mobilfärger + grupperingstoggle
 // @author       Jörgen
 // @match        https://www.citypolarna.se/*
@@ -25,22 +25,22 @@
   // ── Färgtabell Desktop — justera fritt ──────────────────────────────────
   const colorsDesktop = {
     plus: {
-      anmald:      { bg: '#2e157a', left: '#2e157a', date: '#222222' },
-      reserv:      { bg: '#2e157a', left: '#2e157a', date: '#222222' },
-      intresserad: { bg: '#2e157a', left: '#2e157a', date: '#222222' },
-      default:     { bg: '#2e157a', left: '#2e157a', date: '#222222' },
+      anmald:      { bg: '#3a157a', left: '#3a157a', date: '#222222' },
+      reserv:      { bg: '#3a157a', left: '#3a157a', date: '#222222' },
+      intresserad: { bg: '#3a157a', left: '#3a157a', date: '#222222' },
+      default:     { bg: '#3a157a', left: '#3a157a', date: '#222222' },
     },
     open: {
-      anmald:      { bg: '#084408', left: '#084408', date: '#222222' },
-      reserv:      { bg: '#084408', left: '#084408', date: '#222222' },
-      intresserad: { bg: '#084408', left: '#084408', date: '#222222' },
-      default:     { bg: '#084408', left: '#084408', date: '#222222' },
+      anmald:      { bg: '#004400', left: '#004400', date: '#222222' },
+      reserv:      { bg: '#004400', left: '#004400', date: '#222222' },
+      intresserad: { bg: '#004400', left: '#004400', date: '#222222' },
+      default:     { bg: '#004400', left: '#004400', date: '#222222' },
     },
     private: {
-      anmald:      { bg: '#770808', left: '#770808', date: '#222222' },
-      reserv:      { bg: '#770808', left: '#770808', date: '#222222' },
-      intresserad: { bg: '#770808', left: '#770808', date: '#222222' },
-      default:     { bg: '#770808', left: '#770808', date: '#222222' },
+      anmald:      { bg: '#660000', left: '#660000', date: '#222222' },
+      reserv:      { bg: '#660000', left: '#660000', date: '#222222' },
+      intresserad: { bg: '#660000', left: '#660000', date: '#222222' },
+      default:     { bg: '#660000', left: '#660000', date: '#222222' },
     },
     tips: {
       anmald:      { bg: '#5a3e00', left: '#5a3e00', date: '#222222' },
@@ -49,32 +49,32 @@
       default:     { bg: '#5a3e00', left: '#5a3e00', date: '#222222' },
     },
     draft: {
-      anmald:      { bg: '#2e2e2e', left: '#2e2e2e', date: '#222222' },
-      reserv:      { bg: '#2e2e2e', left: '#2e2e2e', date: '#222222' },
-      intresserad: { bg: '#2e2e2e', left: '#2e2e2e', date: '#222222' },
-      default:     { bg: '#2e2e2e', left: '#2e2e2e', date: '#222222' },
+      anmald:      { bg: '#333333', left: '#333333', date: '#222222' },
+      reserv:      { bg: '#333333', left: '#333333', date: '#222222' },
+      intresserad: { bg: '#333333', left: '#333333', date: '#222222' },
+      default:     { bg: '#333333', left: '#333333', date: '#222222' },
     },
   };
 
   // ── Färgtabell Mobil — justera fritt ────────────────────────────────────
   const colorsMobile = {
     plus: {
-      anmald:      { bg: '#2e157a', left: '#2e157a', date: '#2e157a' },
-      reserv:      { bg: '#2e157a', left: '#2e157a', date: '#2e157a' },
-      intresserad: { bg: '#2e157a', left: '#2e157a', date: '#2e157a' },
-      default:     { bg: '#2e157a', left: '#2e157a', date: '#2e157a' },
+      anmald:      { bg: '#3a157a', left: '#3a157a', date: '#3a157a' },
+      reserv:      { bg: '#3a157a', left: '#3a157a', date: '#3a157a' },
+      intresserad: { bg: '#3a157a', left: '#3a157a', date: '#3a157a' },
+      default:     { bg: '#3a157a', left: '#3a157a', date: '#3a157a' },
     },
     open: {
-      anmald:      { bg: '#115511', left: '#115511', date: '#115511' },
-      reserv:      { bg: '#115511', left: '#115511', date: '#115511' },
-      intresserad: { bg: '#115511', left: '#115511', date: '#115511' },
-      default:     { bg: '#115511', left: '#115511', date: '#115511' },
+      anmald:      { bg: '#004400', left: '#004400', date: '#004400' },
+      reserv:      { bg: '#004400', left: '#004400', date: '#004400' },
+      intresserad: { bg: '#004400', left: '#004400', date: '#004400' },
+      default:     { bg: '#004400', left: '#004400', date: '#004400' },
     },
     private: {
-      anmald:      { bg: '#771111', left: '#771111', date: '#771111' },
-      reserv:      { bg: '#771111', left: '#771111', date: '#771111' },
-      intresserad: { bg: '#771111', left: '#771111', date: '#771111' },
-      default:     { bg: '#771111', left: '#771111', date: '#771111' },
+      anmald:      { bg: '#660000', left: '#660000', date: '#660000' },
+      reserv:      { bg: '#660000', left: '#660000', date: '#660000' },
+      intresserad: { bg: '#660000', left: '#660000', date: '#660000' },
+      default:     { bg: '#660000', left: '#660000', date: '#660000' },
     },
     tips: {
       anmald:      { bg: '#5a3e00', left: '#5a3e00', date: '#5a3e00' },
@@ -83,10 +83,10 @@
       default:     { bg: '#5a3e00', left: '#5a3e00', date: '#5a3e00' },
     },
     draft: {
-      anmald:      { bg: '#2e2e2e', left: '#2e2e2e', date: '#2e2e2e' },
-      reserv:      { bg: '#2e2e2e', left: '#2e2e2e', date: '#2e2e2e' },
-      intresserad: { bg: '#2e2e2e', left: '#2e2e2e', date: '#2e2e2e' },
-      default:     { bg: '#2e2e2e', left: '#2e2e2e', date: '#2e2e2e' },
+      anmald:      { bg: '#333333', left: '#333333', date: '#333333' },
+      reserv:      { bg: '#333333', left: '#333333', date: '#333333' },
+      intresserad: { bg: '#333333', left: '#333333', date: '#333333' },
+      default:     { bg: '#333333', left: '#333333', date: '#333333' },
     },
   };
 
