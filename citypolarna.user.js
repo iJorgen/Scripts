@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Citypolarna Deluxe
 // @namespace    https://citypolarna.se
-// @version      1.6.4
+// @version      1.6.5
 // @description  Grupperar "Mina aktiviteter" + färgmarkerar plus/open/private/tips/draft + OLED-black + separata mobilfärger + grupperingstoggle
 // @author       Jörgen
 // @license      MIT
@@ -210,7 +210,7 @@
 
     const sections = [
       { key: 'anmald', label: '✅ Anmäld', color: '#2a7a2a' },
-      { key: 'reserv', label: '🟡 Reserv', color: '#b07800' },
+      { key: 'reserv', label: '🟡 Reserv', color: '#CC7722' },
       { key: 'intresserad', label: '👁 Intresserad', color: '#aa0000' },
     ];
 
