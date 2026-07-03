@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Citypolarna Deluxe
 // @namespace    https://citypolarna.se
-// @version      1.5
+// @version      1.6
 // @description  Grupperar "Mina aktiviteter" + färgmarkerar plus/open/private/tips/draft + OLED-black + separata mobilfärger + grupperingstoggle
 // @author       Jörgen
 // @license      MIT
@@ -150,14 +150,12 @@
 
   // ── Färglägg alla tabeller i en rad (desktop + mobile med rätt palett) ───
   function colorRowTables(row, cat) {
-    // row = wrapper-<div> som har ALLA typ-klasser (plus_event, draft, tips_event osv.)
-    // De inre <table>-elementen saknar tips_event/draft — läs därför alltid från diven
     const tables = row.querySelectorAll('table.event_row_table');
     if (!tables.length) return;
 
     tables.forEach(table => {
       const isMobile = table.classList.contains('mobile');
-      const palette = getPalette(row, cat, isMobile); // <-- row istället för tables[0]
+      const palette = getPalette(row, cat, isMobile);
       colorRow(table, palette);
     });
   }
@@ -281,7 +279,7 @@
   // ── Observera dynamiskt injicerat innehåll och applicera OLED direkt ─────
   let oledObserver = null;
 
-  function applyOledToNode(node) {
+    function applyOledToNode(node) {
     if (node.nodeType !== 1) return;
     const cs = getComputedStyle(node);
     if (isNearlyBlack(cs.backgroundColor)) {
@@ -400,33 +398,52 @@
     createToggleButton();
   }
 
-  // ── Deterministisk trigger — väntar på att sidans JS satt typ-klasserna ──
-  function isReady() {
+  // ── Stabilitetscheck — väntar tills antalet redo-tabeller slutat ändras ──
+  let triggered = false;
+  let lastReadyCount = 0;
+  let stableFrames = 0;
+  const STABLE_FRAMES_REQUIRED = 2;
+
+  function countReadyTables() {
     const wrapper = document.querySelector('#my_event_list');
-    if (!wrapper) return false;
-    return wrapper.querySelector(
+    if (!wrapper) return 0;
+    return wrapper.querySelectorAll(
       'table.event_row_table.open, ' +
       'table.event_row_table.plus_event, ' +
       'table.event_row_table.private, ' +
       'table.event_row_table.tips_event, ' +
       'table.event_row_table.draft'
-    ) !== null;
+    ).length;
   }
-
-  // ── Kör OLED direkt — fungerar på alla sidor, även utan kalendervy ───────
-  function runOledImmediate() {
-    applyOled();
-    observeOled();
-  }
-
-  let triggered = false;
 
   function tryRun() {
     if (triggered) return;
-    if (!isReady()) return;
+
+    const current = countReadyTables();
+
+    if (current === 0) {
+      lastReadyCount = 0;
+      stableFrames = 0;
+      return;
+    }
+
+    if (current !== lastReadyCount) {
+      lastReadyCount = current;
+      stableFrames = 0;
+      return;
+    }
+
+    stableFrames++;
+    if (stableFrames < STABLE_FRAMES_REQUIRED) return;
+
+    // Stabilt — kör nu
     triggered = true;
     observer.disconnect();
-    Promise.resolve().then(run);
+
+    // Första rAF = layout klar, andra rAF = efter paint (computed styles stabila)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(run);
+    });
   }
 
   const observer = new MutationObserver(tryRun);
@@ -438,10 +455,28 @@
     attributeFilter: ['class'],
   });
 
-  // OLED körs alltid direkt — oavsett om kalendervy finns eller ej
+  // ── OLED körs alltid direkt — oavsett om kalendervy finns eller ej ───────
+  function runOledImmediate() {
+    applyOled();
+    observeOled();
+  }
+
   runOledImmediate();
 
-  // Fallback: om sidan redan var redo när skriptet laddades
-  tryRun();
+  // ── Fallback: sidan redan redo när skriptet laddades ─────────────────────
+  if (countReadyTables() > 0) {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(run);
+    });
+  }
+
+  // ── Säkerhetsnät: kör ändå efter max 2 sekunder ──────────────────────────
+  setTimeout(() => {
+    if (!triggered && countReadyTables() > 0) {
+      triggered = true;
+      observer.disconnect();
+      run();
+    }
+  }, 2000);
 
 })();
