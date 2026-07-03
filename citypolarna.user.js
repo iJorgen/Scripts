@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Citypolarna Deluxe
 // @namespace    https://citypolarna.se
-// @version      1.6
+// @version      1.6.1
 // @description  Grupperar "Mina aktiviteter" + färgmarkerar plus/open/private/tips/draft + OLED-black + separata mobilfärger + grupperingstoggle
 // @author       Jörgen
 // @license      MIT
@@ -34,16 +34,16 @@
       default:     { bg: '#3a157a', left: '#3a157a', date: '#222222' },
     },
     open: {
-      anmald:      { bg: '#004400', left: '#004400', date: '#222222' },
-      reserv:      { bg: '#004400', left: '#004400', date: '#222222' },
-      intresserad: { bg: '#004400', left: '#004400', date: '#222222' },
-      default:     { bg: '#004400', left: '#004400', date: '#222222' },
+      anmald:      { bg: '#084408', left: '#084408', date: '#222222' },
+      reserv:      { bg: '#084408', left: '#084408', date: '#222222' },
+      intresserad: { bg: '#084408', left: '#084408', date: '#222222' },
+      default:     { bg: '#084408', left: '#084408', date: '#222222' },
     },
     private: {
-      anmald:      { bg: '#660000', left: '#660000', date: '#222222' },
-      reserv:      { bg: '#660000', left: '#660000', date: '#222222' },
-      intresserad: { bg: '#660000', left: '#660000', date: '#222222' },
-      default:     { bg: '#660000', left: '#660000', date: '#222222' },
+      anmald:      { bg: '#660808', left: '#660808', date: '#222222' },
+      reserv:      { bg: '#660808', left: '#660808', date: '#222222' },
+      intresserad: { bg: '#660808', left: '#660808', date: '#222222' },
+      default:     { bg: '#660808', left: '#660808', date: '#222222' },
     },
     tips: {
       anmald:      { bg: '#473100', left: '#473100', date: '#222222' },
@@ -68,16 +68,16 @@
       default:     { bg: '#3a157a', left: '#3a157a', date: '#3a157a' },
     },
     open: {
-      anmald:      { bg: '#004400', left: '#004400', date: '#004400' },
-      reserv:      { bg: '#004400', left: '#004400', date: '#004400' },
-      intresserad: { bg: '#004400', left: '#004400', date: '#004400' },
-      default:     { bg: '#004400', left: '#004400', date: '#004400' },
+      anmald:      { bg: '#084408', left: '#084408', date: '#084408' },
+      reserv:      { bg: '#084408', left: '#084408', date: '#084408' },
+      intresserad: { bg: '#084408', left: '#084408', date: '#084408' },
+      default:     { bg: '#084408', left: '#084408', date: '#084408' },
     },
     private: {
-      anmald:      { bg: '#660000', left: '#660000', date: '#660000' },
-      reserv:      { bg: '#660000', left: '#660000', date: '#660000' },
-      intresserad: { bg: '#660000', left: '#660000', date: '#660000' },
-      default:     { bg: '#660000', left: '#660000', date: '#660000' },
+      anmald:      { bg: '#660808', left: '#660808', date: '#660808' },
+      reserv:      { bg: '#660808', left: '#660808', date: '#660808' },
+      intresserad: { bg: '#660808', left: '#660808', date: '#660808' },
+      default:     { bg: '#660808', left: '#660808', date: '#660808' },
     },
     tips: {
       anmald:      { bg: '#473100', left: '#473100', date: '#473100' },
