@@ -1,5 +1,9 @@
-# Citypolarna
-TamperMonkey optimizations of Citypolarna.se
+# My script-corner
 
-First install TamperMonkey in your browser. After that, browse to:
-https://raw.githubusercontent.com/iJorgen/Citypolarna/refs/heads/main/citypolarna.user.js
+Table of content:
+- TamperMonkey optimizations of Citypolarna.se
+
+How to use:
+1. First install TamperMonkey extension in your preferred browser.
+2. Click on the script-file you wish to install.
+3. Click on "Raw" and the script should be installed.
