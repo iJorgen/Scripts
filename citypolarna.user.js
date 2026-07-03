@@ -1,12 +1,15 @@
 // ==UserScript==
-// @name         Citypolarna - Optimized
+// @name         Citypolarna Deluxe
 // @namespace    https://citypolarna.se
-// @version      1.4.1
+// @version      1.5
 // @description  Grupperar "Mina aktiviteter" + färgmarkerar plus/open/private/tips/draft + OLED-black + separata mobilfärger + grupperingstoggle
 // @author       Jörgen
+// @license      MIT
 // @match        https://www.citypolarna.se/*
-// @updateURL    https://raw.githubusercontent.com/iJorgen/Citypolarna/refs/heads/main/citypolarna.user.js
-// @downloadURL  https://raw.githubusercontent.com/iJorgen/Citypolarna/refs/heads/main/citypolarna.user.js
+// @homepageURL  https://github.com/iJorgen/Scripts
+// @supportURL   https://github.com/iJorgen/Scripts/issues
+// @updateURL    https://raw.githubusercontent.com/iJorgen/Scripts/refs/heads/main/citypolarna.user.js
+// @downloadURL  https://raw.githubusercontent.com/iJorgen/Scripts/refs/heads/main/citypolarna.user.js
 // @grant        none
 // @run-at       document-end
 // ==/UserScript==
