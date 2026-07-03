@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Citypolarna - Optimized
 // @namespace    https://citypolarna.se
-// @version      1.4
+// @version      1.4.1
 // @description  Grupperar "Mina aktiviteter" + färgmarkerar plus/open/private/tips/draft + OLED-black + separata mobilfärger + grupperingstoggle
 // @author       Jörgen
 // @match        https://www.citypolarna.se/*
@@ -43,10 +43,10 @@
       default:     { bg: '#660000', left: '#660000', date: '#222222' },
     },
     tips: {
-      anmald:      { bg: '#5a3e00', left: '#5a3e00', date: '#222222' },
-      reserv:      { bg: '#5a3e00', left: '#5a3e00', date: '#222222' },
-      intresserad: { bg: '#5a3e00', left: '#5a3e00', date: '#222222' },
-      default:     { bg: '#5a3e00', left: '#5a3e00', date: '#222222' },
+      anmald:      { bg: '#473100', left: '#473100', date: '#222222' },
+      reserv:      { bg: '#473100', left: '#473100', date: '#222222' },
+      intresserad: { bg: '#473100', left: '#473100', date: '#222222' },
+      default:     { bg: '#473100', left: '#473100', date: '#222222' },
     },
     draft: {
       anmald:      { bg: '#333333', left: '#333333', date: '#222222' },
@@ -77,10 +77,10 @@
       default:     { bg: '#660000', left: '#660000', date: '#660000' },
     },
     tips: {
-      anmald:      { bg: '#5a3e00', left: '#5a3e00', date: '#5a3e00' },
-      reserv:      { bg: '#5a3e00', left: '#5a3e00', date: '#5a3e00' },
-      intresserad: { bg: '#5a3e00', left: '#5a3e00', date: '#5a3e00' },
-      default:     { bg: '#5a3e00', left: '#5a3e00', date: '#5a3e00' },
+      anmald:      { bg: '#473100', left: '#473100', date: '#473100' },
+      reserv:      { bg: '#473100', left: '#473100', date: '#473100' },
+      intresserad: { bg: '#473100', left: '#473100', date: '#473100' },
+      default:     { bg: '#473100', left: '#473100', date: '#473100' },
     },
     draft: {
       anmald:      { bg: '#333333', left: '#333333', date: '#333333' },
