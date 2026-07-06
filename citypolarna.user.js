@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Citypolarna Deluxe
 // @namespace    https://citypolarna.se
-// @version      1.6.5
+// @version      1.6.6
 // @description  Grupperar "Mina aktiviteter" + färgmarkerar plus/open/private/tips/draft + OLED-black + separata mobilfärger + grupperingstoggle
 // @author       Jörgen
 // @license      MIT
@@ -34,22 +34,22 @@
       default:     { bg: '#3a157a', left: '#3a157a', date: '#222222' },
     },
     open: {
-      anmald:      { bg: '#084408', left: '#084408', date: '#222222' },
-      reserv:      { bg: '#084408', left: '#084408', date: '#222222' },
-      intresserad: { bg: '#084408', left: '#084408', date: '#222222' },
-      default:     { bg: '#084408', left: '#084408', date: '#222222' },
+      anmald:      { bg: '#084808', left: '#084808', date: '#222222' },
+      reserv:      { bg: '#084808', left: '#084808', date: '#222222' },
+      intresserad: { bg: '#084808', left: '#084808', date: '#222222' },
+      default:     { bg: '#084808', left: '#084808', date: '#222222' },
     },
     private: {
-      anmald:      { bg: '#770808', left: '#770808', date: '#222222' },
-      reserv:      { bg: '#770808', left: '#770808', date: '#222222' },
-      intresserad: { bg: '#770808', left: '#770808', date: '#222222' },
-      default:     { bg: '#770808', left: '#770808', date: '#222222' },
+      anmald:      { bg: '#700404', left: '#700404', date: '#222222' },
+      reserv:      { bg: '#700404', left: '#700404', date: '#222222' },
+      intresserad: { bg: '#700404', left: '#700404', date: '#222222' },
+      default:     { bg: '#700404', left: '#700404', date: '#222222' },
     },
     tips: {
-      anmald:      { bg: '#5C3317', left: '#5C3317', date: '#222222' },
-      reserv:      { bg: '#5C3317', left: '#5C3317', date: '#222222' },
-      intresserad: { bg: '#5C3317', left: '#5C3317', date: '#222222' },
-      default:     { bg: '#5C3317', left: '#5C3317', date: '#222222' },
+      anmald:      { bg: '#4A2912', left: '#4A2912', date: '#222222' },
+      reserv:      { bg: '#4A2912', left: '#4A2912', date: '#222222' },
+      intresserad: { bg: '#4A2912', left: '#4A2912', date: '#222222' },
+      default:     { bg: '#4A2912', left: '#4A2912', date: '#222222' },
     },
     draft: {
       anmald:      { bg: '#333333', left: '#333333', date: '#222222' },
@@ -68,22 +68,22 @@
       default:     { bg: '#3a157a', left: '#3a157a', date: '#3a157a' },
     },
     open: {
-      anmald:      { bg: '#084408', left: '#084408', date: '#084408' },
-      reserv:      { bg: '#084408', left: '#084408', date: '#084408' },
-      intresserad: { bg: '#084408', left: '#084408', date: '#084408' },
-      default:     { bg: '#084408', left: '#084408', date: '#084408' },
+      anmald:      { bg: '#084808', left: '#084808', date: '#084808' },
+      reserv:      { bg: '#084808', left: '#084808', date: '#084808' },
+      intresserad: { bg: '#084808', left: '#084808', date: '#084808' },
+      default:     { bg: '#084808', left: '#084808', date: '#084808' },
     },
     private: {
-      anmald:      { bg: '#770808', left: '#770808', date: '#770808' },
-      reserv:      { bg: '#770808', left: '#770808', date: '#770808' },
-      intresserad: { bg: '#770808', left: '#770808', date: '#770808' },
-      default:     { bg: '#770808', left: '#770808', date: '#770808' },
+      anmald:      { bg: '#700404', left: '#700404', date: '#700404' },
+      reserv:      { bg: '#700404', left: '#700404', date: '#700404' },
+      intresserad: { bg: '#700404', left: '#700404', date: '#700404' },
+      default:     { bg: '#700404', left: '#700404', date: '#700404' },
     },
     tips: {
-      anmald:      { bg: '#5C3317', left: '#5C3317', date: '#5C3317' },
-      reserv:      { bg: '#5C3317', left: '#5C3317', date: '#5C3317' },
-      intresserad: { bg: '#5C3317', left: '#5C3317', date: '#5C3317' },
-      default:     { bg: '#5C3317', left: '#5C3317', date: '#5C3317' },
+      anmald:      { bg: '#4A2912', left: '#4A2912', date: '#4A2912' },
+      reserv:      { bg: '#4A2912', left: '#4A2912', date: '#4A2912' },
+      intresserad: { bg: '#4A2912', left: '#4A2912', date: '#4A2912' },
+      default:     { bg: '#4A2912', left: '#4A2912', date: '#4A2912' },
     },
     draft: {
       anmald:      { bg: '#333333', left: '#333333', date: '#333333' },
