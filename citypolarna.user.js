@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         Citypolarna Deluxe
 // @namespace    https://citypolarna.se
-// @version      1.9.2
-// @description  Grupperar "Mina aktiviteter" + färgmarkerar + OLED + Toggle + Sök/Datum-stöd
+// @version      1.9.4
+// @description  Grupperar "Mina aktiviteter" + färgmarkerar + OLED + Toggle + Sök/Datum-stöd (iOS Safe)
 // @author       Jörgen
 // @license      MIT
-// @match        https://www.citypolarna.se/*
+// @match        https://www.citypolarna.se/calendar.php*
 // @grant        none
 // @run-at       document-end
 // ==/UserScript==
@@ -13,6 +13,13 @@
 (function () {
   'use strict';
 
+  // 🔒 LAGER 2: Hårdkodad URL-kontroll (Säkerhetsnät om @match misslyckas)
+  if (!location.pathname.startsWith('/calendar.php')) {
+    console.log('[Citypolarna Deluxe] Avbryter: Inte på calendar.php');
+    return;
+  }
+
+  // ── Konstanter ────────────────────────────────────────────────────────────
   const OLED_WHITE = 180;
   const OLED_BLACK = 30;
   const STORAGE_KEY = 'citypolarna_grouping';
@@ -38,6 +45,7 @@
 
   const DATE_CLASSES = ['event_row__primary_date', 'event_row__secondary_date', 'row__date_filler', 'event_row__date'];
 
+  // ── Hjälpfunktioner ───────────────────────────────────────────────────────
   function classifyRow(row) {
     const id = row.querySelector('td.event_row__status svg')?.id;
     if (id === 'icon_coming') return 'anmald';
@@ -163,17 +171,23 @@
     document.body.appendChild(btn);
   }
 
-  // ── Kör allt en gång, koppla sedan bort observern helt ───────────────────
+  // ── Huvudlogik: Kör EN GÅNG och stäng av allt ────────────────────────────
+  let runOnce = false;
+
   function run() {
-    obs.disconnect();         // Koppla bort OLED-observer
-    mainObs.disconnect();     // Koppla bort huvud-observer
+    if (runOnce) return;
+    runOnce = true;
+    
+    // Koppla bort alla observatörer OMEDELBART
+    if (typeof mainObs !== 'undefined') mainObs.disconnect();
+    if (typeof obs !== 'undefined') obs.disconnect();
+    
     colorAllVisible();
     applyGrouping();
     applyOledToNode(document.body);
-    // Observerna förblir bortkopplade — inga fler triggers efter detta
   }
 
-  // ── Huvud-observer: väntar på event-rader, kör run() EN gång, stängs av ──
+  // ── Enkel, kortlivad Observer för initial laddning ───────────────────────
   let debounceTimer = null;
   let lastCount = 0;
   let stableFrames = 0;
@@ -185,31 +199,27 @@
     if (count === 0) return;
     if (count !== lastCount) { lastCount = count; stableFrames = 0; return; }
     if (++stableFrames < 2) return;
-    // Stabilt antal rader — kör nu
+    
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => requestAnimationFrame(run), 100);
   });
 
-  // ── OLED-observer: kör bara under laddning, stängs av i run() ────────────
   const obs = new MutationObserver(mutations => {
     const added = new Set();
     mutations.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) added.add(n); }));
     if (added.size) Promise.resolve().then(() => added.forEach(applyOledToNode));
   });
 
+  // Starta
   createToggle();
   applyOledToNode(document.body);
-
-  // Starta observerna
   mainObs.observe(document.body, { childList: true, subtree: true });
   obs.observe(document.body, { childList: true, subtree: true });
 
-  // Fallback om tabeller redan finns vid laddning
+  // Fallback
   if (document.querySelector('table.event_row_table')) {
     requestAnimationFrame(run);
   }
-
-  // Säkerhetsnät efter 3s
   setTimeout(() => {
     if (document.querySelector('div.event_row_table')) run();
   }, 3000);
