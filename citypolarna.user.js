@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Citypolarna Deluxe
 // @namespace    https://citypolarna.se
-// @version      1.9.0
-// @description  Grupperar "Mina aktiviteter" + färgmarkerar + OLED + Toggle + Sök/Datum (iOS Optimerad)
+// @version      1.9.2
+// @description  Grupperar "Mina aktiviteter" + färgmarkerar + OLED + Toggle + Sök/Datum-stöd
 // @author       Jörgen
 // @license      MIT
 // @match        https://www.citypolarna.se/*
@@ -19,7 +19,6 @@
   let groupingEnabled = localStorage.getItem(STORAGE_KEY) !== 'false';
   let savedOriginalRows = null;
 
-  // Färger
   const PALETTE = {
     desktop: {
       plus: { bg: '#3a157a', date: '#222222' },
@@ -74,27 +73,9 @@
     });
   }
 
-  // Optimerad: Söker bara i de kända wrapper-divarna, inte hela document
   function colorAllVisible() {
-    const wrappers = [
-      '#my_event_list',
-      '#calendar_list_my .calendar_list_box > div',
-      '#calendar_list_my .weekview',
-      '#calendar_list_my_invitations',
-      '#calendar_list_new',
-      '#calendar_list_week',
-      '.calendar_list_box > div',
-      '#event_list',
-      '#search_results'
-    ];
-    
-    wrappers.forEach(sel => {
-      const container = document.querySelector(sel);
-      if (container) {
-        container.querySelectorAll('div.event_row_table').forEach(row => {
-          row.querySelectorAll('table.event_row_table').forEach(t => colorTable(t));
-        });
-      }
+    document.querySelectorAll('div.event_row_table').forEach(row => {
+      row.querySelectorAll('table.event_row_table').forEach(t => colorTable(t));
     });
   }
 
@@ -123,17 +104,19 @@
     if (!savedOriginalRows) savedOriginalRows = rows.slice();
     const groups = { anmald: [], reserv: [], intresserad: [], default: [] };
     rows.forEach(r => groups[classifyRow(r)].push(r));
-    wrapper.innerHTML = '';
+    const fragment = document.createDocumentFragment();
     [
       { k: 'anmald', l: '✅ Anmäld', c: '#2a7a2a' },
       { k: 'reserv', l: '🟡 Reserv', c: '#CC7722' },
       { k: 'intresserad', l: '👁 Intresserad', c: '#aa0000' },
     ].forEach(item => {
       if (!groups[item.k].length) return;
-      wrapper.appendChild(makeHeader(item.l, item.c, groups[item.k].length));
-      groups[item.k].forEach(r => wrapper.appendChild(r));
+      fragment.appendChild(makeHeader(item.l, item.c, groups[item.k].length));
+      groups[item.k].forEach(r => fragment.appendChild(r));
     });
-    groups.default.forEach(r => wrapper.appendChild(r));
+    groups.default.forEach(r => fragment.appendChild(r));
+    wrapper.innerHTML = '';
+    wrapper.appendChild(fragment);
   }
 
   function isNearWhite(rgb) {
@@ -165,16 +148,10 @@
       btn.textContent = groupingEnabled ? '📋 Visa som lista' : '🗂 Visa grupperat';
     };
     btn.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:99999;padding:8px 14px;background:#1a1a2e;color:#fff;border:1px solid #444;border-radius:8px;font-size:0.9em;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.6)';
-    
-    // iOS-optimering: Använd 'touchstart' och 'touchend' för snabbare respons
-    // Men vi behåller mouse för kompatibilitet
-    btn.addEventListener('touchstart', () => { btn.style.background = '#2e2e50'; }, {passive: true});
-    btn.addEventListener('touchend', () => { btn.style.background = '#1a1a2e'; }, {passive: true});
     btn.addEventListener('mouseenter', () => { btn.style.background = '#2e2e50'; });
     btn.addEventListener('mouseleave', () => { btn.style.background = '#1a1a2e'; });
-    
     btn.addEventListener('click', (e) => {
-      e.preventDefault(); // Förhindra dubbelklick på iOS
+      e.preventDefault();
       e.stopPropagation();
       groupingEnabled = !groupingEnabled;
       localStorage.setItem(STORAGE_KEY, groupingEnabled);
@@ -186,69 +163,55 @@
     document.body.appendChild(btn);
   }
 
-  // iOS-Optimering: Vi kopplar INTE bort observatören. Istället använder vi en flagga för att undvika loopar.
-  let isProcessing = false;
-  let debounceTimer = null;
-
-  function scheduleRun() {
-    if (isProcessing) return;
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-      isProcessing = true;
-      // Liten paus för att låta iOS hantera touch-händelser först
-      setTimeout(() => {
-        colorAllVisible();
-        applyGrouping();
-        applyOledToNode(document.body);
-        isProcessing = false;
-      }, 50);
-    }, 100); // Sänkt till 100ms för snabbare respons
+  // ── Kör allt en gång, koppla sedan bort observern helt ───────────────────
+  function run() {
+    obs.disconnect();         // Koppla bort OLED-observer
+    mainObs.disconnect();     // Koppla bort huvud-observer
+    colorAllVisible();
+    applyGrouping();
+    applyOledToNode(document.body);
+    // Observerna förblir bortkopplade — inga fler triggers efter detta
   }
 
-  const obs = new MutationObserver(mutations => {
-    // Kontrollera att det faktiskt finns nya event-rader
-    const hasNew = mutations.some(m => {
-      return [...m.addedNodes].some(n => {
-        return n.nodeType === 1 && (n.classList && n.classList.contains('event_row_table') || n.querySelector && n.querySelector('div.event_row_table, table.event_row_table'));
-      });
-    });
-    if (!hasNew) return;
-    scheduleRun();
+  // ── Huvud-observer: väntar på event-rader, kör run() EN gång, stängs av ──
+  let debounceTimer = null;
+  let lastCount = 0;
+  let stableFrames = 0;
+
+  const mainObs = new MutationObserver(() => {
+    const count = document.querySelectorAll(
+      'table.event_row_table.open, table.event_row_table.plus_event, table.event_row_table.private, table.event_row_table.tips_event, table.event_row_table.draft'
+    ).length;
+    if (count === 0) return;
+    if (count !== lastCount) { lastCount = count; stableFrames = 0; return; }
+    if (++stableFrames < 2) return;
+    // Stabilt antal rader — kör nu
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => requestAnimationFrame(run), 100);
   });
 
-  // OLED-observer (separat)
-  new MutationObserver(mutations => {
+  // ── OLED-observer: kör bara under laddning, stängs av i run() ────────────
+  const obs = new MutationObserver(mutations => {
     const added = new Set();
-    mutations.forEach(m => {
-      m.addedNodes.forEach(n => {
-        if (n.nodeType === 1) added.add(n);
-      });
-    });
+    mutations.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) added.add(n); }));
     if (added.size) Promise.resolve().then(() => added.forEach(applyOledToNode));
-  }).observe(document.body, { childList: true, subtree: true });
+  });
 
-  // Start
   createToggle();
   applyOledToNode(document.body);
-  
-  // Sätt på huvud-observatören
+
+  // Starta observerna
+  mainObs.observe(document.body, { childList: true, subtree: true });
   obs.observe(document.body, { childList: true, subtree: true });
 
-  // Fallback för initial laddning
+  // Fallback om tabeller redan finns vid laddning
   if (document.querySelector('table.event_row_table')) {
-    setTimeout(() => {
-      colorAllVisible();
-      applyGrouping();
-    }, 200);
-  } else {
-    const checkRows = setInterval(() => {
-      if (document.querySelector('table.event_row_table')) {
-        clearInterval(checkRows);
-        colorAllVisible();
-        applyGrouping();
-      }
-    }, 200);
-    setTimeout(() => clearInterval(checkRows), 5000);
+    requestAnimationFrame(run);
   }
+
+  // Säkerhetsnät efter 3s
+  setTimeout(() => {
+    if (document.querySelector('div.event_row_table')) run();
+  }, 3000);
 
 })();
