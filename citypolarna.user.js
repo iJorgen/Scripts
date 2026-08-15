@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Citypolarna Deluxe
 // @namespace    https://citypolarna.se
-// @version      1.8.2
-// @description  Grupperar "Mina aktiviteter" + färgmarkerar + OLED + Toggle + Sök/Datum-stöd (ESLint renad)
+// @version      1.9.0
+// @description  Grupperar "Mina aktiviteter" + färgmarkerar + OLED + Toggle + Sök/Datum (iOS Optimerad)
 // @author       Jörgen
 // @license      MIT
 // @match        https://www.citypolarna.se/*
@@ -19,6 +19,7 @@
   let groupingEnabled = localStorage.getItem(STORAGE_KEY) !== 'false';
   let savedOriginalRows = null;
 
+  // Färger
   const PALETTE = {
     desktop: {
       plus: { bg: '#3a157a', date: '#222222' },
@@ -73,9 +74,27 @@
     });
   }
 
+  // Optimerad: Söker bara i de kända wrapper-divarna, inte hela document
   function colorAllVisible() {
-    document.querySelectorAll('div.event_row_table').forEach(row => {
-      row.querySelectorAll('table.event_row_table').forEach(t => colorTable(t));
+    const wrappers = [
+      '#my_event_list',
+      '#calendar_list_my .calendar_list_box > div',
+      '#calendar_list_my .weekview',
+      '#calendar_list_my_invitations',
+      '#calendar_list_new',
+      '#calendar_list_week',
+      '.calendar_list_box > div',
+      '#event_list',
+      '#search_results'
+    ];
+    
+    wrappers.forEach(sel => {
+      const container = document.querySelector(sel);
+      if (container) {
+        container.querySelectorAll('div.event_row_table').forEach(row => {
+          row.querySelectorAll('table.event_row_table').forEach(t => colorTable(t));
+        });
+      }
     });
   }
 
@@ -146,47 +165,58 @@
       btn.textContent = groupingEnabled ? '📋 Visa som lista' : '🗂 Visa grupperat';
     };
     btn.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:99999;padding:8px 14px;background:#1a1a2e;color:#fff;border:1px solid #444;border-radius:8px;font-size:0.9em;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.6)';
-    btn.addEventListener('mouseenter', () => {
-      btn.style.background = '#2e2e50';
-    });
-    btn.addEventListener('mouseleave', () => {
-      btn.style.background = '#1a1a2e';
-    });
-    btn.addEventListener('click', () => {
+    
+    // iOS-optimering: Använd 'touchstart' och 'touchend' för snabbare respons
+    // Men vi behåller mouse för kompatibilitet
+    btn.addEventListener('touchstart', () => { btn.style.background = '#2e2e50'; }, {passive: true});
+    btn.addEventListener('touchend', () => { btn.style.background = '#1a1a2e'; }, {passive: true});
+    btn.addEventListener('mouseenter', () => { btn.style.background = '#2e2e50'; });
+    btn.addEventListener('mouseleave', () => { btn.style.background = '#1a1a2e'; });
+    
+    btn.addEventListener('click', (e) => {
+      e.preventDefault(); // Förhindra dubbelklick på iOS
+      e.stopPropagation();
       groupingEnabled = !groupingEnabled;
       localStorage.setItem(STORAGE_KEY, groupingEnabled);
       update();
-      obs.disconnect();
       applyGrouping();
       colorAllVisible();
-      obs.observe(document.body, OBS_CONFIG);
     });
     update();
     document.body.appendChild(btn);
   }
 
-  function run() {
-    obs.disconnect();
-    colorAllVisible();
-    applyGrouping();
-    applyOledToNode(document.body);
-    obs.observe(document.body, OBS_CONFIG);
-  }
-
-  const OBS_CONFIG = { childList: true, subtree: true };
+  // iOS-Optimering: Vi kopplar INTE bort observatören. Istället använder vi en flagga för att undvika loopar.
+  let isProcessing = false;
   let debounceTimer = null;
 
+  function scheduleRun() {
+    if (isProcessing) return;
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      isProcessing = true;
+      // Liten paus för att låta iOS hantera touch-händelser först
+      setTimeout(() => {
+        colorAllVisible();
+        applyGrouping();
+        applyOledToNode(document.body);
+        isProcessing = false;
+      }, 50);
+    }, 100); // Sänkt till 100ms för snabbare respons
+  }
+
   const obs = new MutationObserver(mutations => {
+    // Kontrollera att det faktiskt finns nya event-rader
     const hasNew = mutations.some(m => {
       return [...m.addedNodes].some(n => {
         return n.nodeType === 1 && (n.classList && n.classList.contains('event_row_table') || n.querySelector && n.querySelector('div.event_row_table, table.event_row_table'));
       });
     });
     if (!hasNew) return;
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(run, 150);
+    scheduleRun();
   });
 
+  // OLED-observer (separat)
   new MutationObserver(mutations => {
     const added = new Set();
     mutations.forEach(m => {
@@ -197,21 +227,28 @@
     if (added.size) Promise.resolve().then(() => added.forEach(applyOledToNode));
   }).observe(document.body, { childList: true, subtree: true });
 
+  // Start
   createToggle();
   applyOledToNode(document.body);
+  
+  // Sätt på huvud-observatören
+  obs.observe(document.body, { childList: true, subtree: true });
 
-  let fallbackTimer = null;
-  function waitForRows() {
-    if (document.querySelector('table.event_row_table.open, table.event_row_table.plus_event, table.event_row_table.private, table.event_row_table.tips_event, table.event_row_table.draft')) {
-      clearTimeout(fallbackTimer);
-      requestAnimationFrame(() => requestAnimationFrame(run));
-    }
+  // Fallback för initial laddning
+  if (document.querySelector('table.event_row_table')) {
+    setTimeout(() => {
+      colorAllVisible();
+      applyGrouping();
+    }, 200);
+  } else {
+    const checkRows = setInterval(() => {
+      if (document.querySelector('table.event_row_table')) {
+        clearInterval(checkRows);
+        colorAllVisible();
+        applyGrouping();
+      }
+    }, 200);
+    setTimeout(() => clearInterval(checkRows), 5000);
   }
-
-  obs.observe(document.body, OBS_CONFIG);
-  waitForRows();
-  fallbackTimer = setTimeout(() => {
-    if (document.querySelector('div.event_row_table')) run();
-  }, 2000);
 
 })();
