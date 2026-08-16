@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         Citypolarna Deluxe
 // @namespace    https://citypolarna.se
-// @version      1.9.4
-// @description  Grupperar "Mina aktiviteter" + färgmarkerar + OLED + Toggle + Sök/Datum-stöd (iOS Safe)
+// @version      1.9.5
+// @description  OLED på alla sidor + färgläggning/gruppering bara på calendar.php
 // @author       Jörgen
 // @license      MIT
-// @match        https://www.citypolarna.se/calendar.php*
+// @match        https://www.citypolarna.se/*
 // @grant        none
 // @run-at       document-end
 // ==/UserScript==
@@ -13,15 +13,11 @@
 (function () {
   'use strict';
 
-  // 🔒 LAGER 2: Hårdkodad URL-kontroll (Säkerhetsnät om @match misslyckas)
-  if (!location.pathname.startsWith('/calendar.php')) {
-    console.log('[Citypolarna Deluxe] Avbryter: Inte på calendar.php');
-    return;
-  }
-
-  // ── Konstanter ────────────────────────────────────────────────────────────
+  // ── OLED-konstanter (kör på ALLA sidor) ──────────────────────────────────
   const OLED_WHITE = 180;
   const OLED_BLACK = 30;
+
+  // ── Kalender-konstanter (kör BARA på calendar.php) ───────────────────────
   const STORAGE_KEY = 'citypolarna_grouping';
   let groupingEnabled = localStorage.getItem(STORAGE_KEY) !== 'false';
   let savedOriginalRows = null;
@@ -45,7 +41,33 @@
 
   const DATE_CLASSES = ['event_row__primary_date', 'event_row__secondary_date', 'row__date_filler', 'event_row__date'];
 
-  // ── Hjälpfunktioner ───────────────────────────────────────────────────────
+  // ── OLED-funktioner (kör på ALLA sidor) ───────────────────────────────────
+  function isNearWhite(rgb) {
+    const m = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+    return m && [1, 2, 3].every(i => +m[i] >= OLED_WHITE);
+  }
+  function isNearBlack(rgb) {
+    const m = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+    return m && [1, 2, 3].every(i => +m[i] <= OLED_BLACK);
+  }
+  function applyOledToNode(node) {
+    if (node.nodeType !== 1) return;
+    [node, ...node.querySelectorAll('*')].forEach(el => {
+      const cs = getComputedStyle(el);
+      if (isNearBlack(cs.backgroundColor)) {
+        el.style.setProperty('background-color', '#000', 'important');
+      }
+      if (isNearWhite(cs.color)) {
+        el.style.setProperty('color', '#fff', 'important');
+      }
+    });
+  }
+
+  function applyOledImmediately() {
+    applyOledToNode(document.body);
+  }
+
+  // ── Kalender-funktioner (kör BARA på calendar.php) ────────────────────────
   function classifyRow(row) {
     const id = row.querySelector('td.event_row__status svg')?.id;
     if (id === 'icon_coming') return 'anmald';
@@ -127,27 +149,6 @@
     wrapper.appendChild(fragment);
   }
 
-  function isNearWhite(rgb) {
-    const m = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
-    return m && [1, 2, 3].every(i => +m[i] >= OLED_WHITE);
-  }
-  function isNearBlack(rgb) {
-    const m = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
-    return m && [1, 2, 3].every(i => +m[i] <= OLED_BLACK);
-  }
-  function applyOledToNode(node) {
-    if (node.nodeType !== 1) return;
-    [node, ...node.querySelectorAll('*')].forEach(el => {
-      const cs = getComputedStyle(el);
-      if (isNearBlack(cs.backgroundColor)) {
-        el.style.setProperty('background-color', '#000', 'important');
-      }
-      if (isNearWhite(cs.color)) {
-        el.style.setProperty('color', '#fff', 'important');
-      }
-    });
-  }
-
   function createToggle() {
     if (document.getElementById('cp-group-toggle')) return;
     const btn = document.createElement('button');
@@ -171,57 +172,60 @@
     document.body.appendChild(btn);
   }
 
-  // ── Huvudlogik: Kör EN GÅNG och stäng av allt ────────────────────────────
-  let runOnce = false;
+  // ── Huvudlogik: OLED på ALLA sidor, kalender-logik BARA på calendar.php ──
+  const isCalendarPage = location.pathname.startsWith('/calendar.php');
 
-  function run() {
-    if (runOnce) return;
-    runOnce = true;
-    
-    // Koppla bort alla observatörer OMEDELBART
-    if (typeof mainObs !== 'undefined') mainObs.disconnect();
-    if (typeof obs !== 'undefined') obs.disconnect();
-    
-    colorAllVisible();
-    applyGrouping();
-    applyOledToNode(document.body);
-  }
+  // OLED körs alltid (på alla sidor)
+  applyOledImmediately();
 
-  // ── Enkel, kortlivad Observer för initial laddning ───────────────────────
-  let debounceTimer = null;
-  let lastCount = 0;
-  let stableFrames = 0;
-
-  const mainObs = new MutationObserver(() => {
-    const count = document.querySelectorAll(
-      'table.event_row_table.open, table.event_row_table.plus_event, table.event_row_table.private, table.event_row_table.tips_event, table.event_row_table.draft'
-    ).length;
-    if (count === 0) return;
-    if (count !== lastCount) { lastCount = count; stableFrames = 0; return; }
-    if (++stableFrames < 2) return;
-    
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => requestAnimationFrame(run), 100);
-  });
-
-  const obs = new MutationObserver(mutations => {
+  // OLED-observer för dynamiskt innehåll (på alla sidor)
+  new MutationObserver(mutations => {
     const added = new Set();
     mutations.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) added.add(n); }));
     if (added.size) Promise.resolve().then(() => added.forEach(applyOledToNode));
-  });
+  }).observe(document.body, { childList: true, subtree: true });
 
-  // Starta
-  createToggle();
-  applyOledToNode(document.body);
-  mainObs.observe(document.body, { childList: true, subtree: true });
-  obs.observe(document.body, { childList: true, subtree: true });
+  // Kalender-logik körs BARA om vi är på calendar.php
+  if (isCalendarPage) {
+    createToggle();
 
-  // Fallback
-  if (document.querySelector('table.event_row_table')) {
-    requestAnimationFrame(run);
+    let runOnce = false;
+    function runCalendar() {
+      if (runOnce) return;
+      runOnce = true;
+
+      // Koppla bort observatörer efter första körning
+      if (typeof calendarObs !== 'undefined') calendarObs.disconnect();
+
+      colorAllVisible();
+      applyGrouping();
+    }
+
+    let debounceTimer = null;
+    let lastCount = 0;
+    let stableFrames = 0;
+
+    const calendarObs = new MutationObserver(() => {
+      const count = document.querySelectorAll(
+        'table.event_row_table.open, table.event_row_table.plus_event, table.event_row_table.private, table.event_row_table.tips_event, table.event_row_table.draft'
+      ).length;
+      if (count === 0) return;
+      if (count !== lastCount) { lastCount = count; stableFrames = 0; return; }
+      if (++stableFrames < 2) return;
+
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => requestAnimationFrame(runCalendar), 100);
+    });
+
+    calendarObs.observe(document.body, { childList: true, subtree: true });
+
+    // Fallback
+    if (document.querySelector('table.event_row_table')) {
+      requestAnimationFrame(runCalendar);
+    }
+    setTimeout(() => {
+      if (document.querySelector('div.event_row_table')) runCalendar();
+    }, 3000);
   }
-  setTimeout(() => {
-    if (document.querySelector('div.event_row_table')) run();
-  }, 3000);
 
 })();
