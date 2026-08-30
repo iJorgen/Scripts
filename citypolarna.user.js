@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Citypolarna Deluxe
 // @namespace    https://citypolarna.se
-// @version      1.9.6
+// @version      1.9.7
 // @description  OLED på alla sidor + färgläggning/gruppering bara på calendar.php
 // @author       Jörgen
 // @license      MIT
