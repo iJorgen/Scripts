@@ -24,10 +24,10 @@
 
   const PALETTE = {
     desktop: {
-      plus: { bg: '#3a157a', date: '#222222' },
-      open: { bg: '#044404', date: '#222222' },
-      private: { bg: '#700404', date: '#222222' },
-      tips: { bg: '#4A2912', date: '#222222' },
+      plus: { bg: '#3a157a', date: '#290469' },
+      open: { bg: '#044404', date: '#003300' },
+      private: { bg: '#700404', date: '#5f0000' },
+      tips: { bg: '#4A2912', date: '#391800' },
       draft: { bg: '#333333', date: '#222222' },
     },
     mobile: {
