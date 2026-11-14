@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Citypolarna Deluxe
 // @namespace    https://citypolarna.se
-// @version      1.9.9
-// @description  OLED på alla sidor + färgläggning/gruppering bara på calendar.php
+// @version      1.9.11
+// @description  OLED på alla sidor + färgläggning/gruppering/knapp bara på ren calendar.php
 // @author       Jörgen
 // @license      MIT
 // @match        https://www.citypolarna.se/*
@@ -17,7 +17,7 @@
   const OLED_WHITE = 180;
   const OLED_BLACK = 30;
 
-  // ── Kalender-konstanter (kör BARA på calendar.php) ───────────────────────
+  // ── Kalender-konstanter (kör BARA på ren calendar.php) ───────────────────
   const STORAGE_KEY = 'citypolarna_grouping';
   let groupingEnabled = localStorage.getItem(STORAGE_KEY) !== 'false';
   let savedOriginalRows = null;
@@ -67,7 +67,7 @@
     applyOledToNode(document.body);
   }
 
-  // ── Kalender-funktioner (kör BARA på calendar.php) ────────────────────────
+  // ── Kalender-funktioner (kör BARA på ren calendar.php) ────────────────────
   function classifyRow(row) {
     const id = row.querySelector('td.event_row__status svg')?.id;
     if (id === 'icon_coming') return 'anmald';
@@ -172,21 +172,20 @@
     document.body.appendChild(btn);
   }
 
-  // ── Huvudlogik: OLED på ALLA sidor, kalender-logik BARA på calendar.php ──
-  const isCalendarPage = location.pathname.startsWith('/calendar.php');
-
-  // OLED körs alltid (på alla sidor)
+  // ── Huvudlogik ────────────────────────────────────────────────────────────
+  // 1. OLED körs alltid på ALLA sidor (inklusive forum.php med alla parametrar)
   applyOledImmediately();
 
-  // OLED-observer för dynamiskt innehåll (på alla sidor)
   new MutationObserver(mutations => {
     const added = new Set();
     mutations.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) added.add(n); }));
     if (added.size) Promise.resolve().then(() => added.forEach(applyOledToNode));
   }).observe(document.body, { childList: true, subtree: true });
 
-  // Kalender-logik körs BARA om vi är på calendar.php
-  if (isCalendarPage) {
+  // 2. Kalenderspecifik logik körs ENDAST på exakt /calendar.php helt utan query-parametrar
+  const isCleanCalendarPage = location.pathname === '/calendar.php' && window.location.search.length === 0;
+
+  if (isCleanCalendarPage) {
     createToggle();
 
     let runOnce = false;
@@ -194,7 +193,6 @@
       if (runOnce) return;
       runOnce = true;
 
-      // Koppla bort observatörer efter första körning
       if (typeof calendarObs !== 'undefined') calendarObs.disconnect();
 
       colorAllVisible();
@@ -219,7 +217,6 @@
 
     calendarObs.observe(document.body, { childList: true, subtree: true });
 
-    // Fallback
     if (document.querySelector('table.event_row_table')) {
       requestAnimationFrame(runCalendar);
     }
