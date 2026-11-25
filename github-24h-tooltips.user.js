@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         GitHub 24-Hour Tooltips (No Timezone)
+// @name         GitHub 24-Hour Tooltips
 // @namespace    https://github.com/
 // @version      1.0
-// @description  Konverterar AM/PM till 24-timmarsformat och tar bort GMT+1/GMT+2 i GitHubs tooltips
+// @description  Konverterar AM/PM till 24-timmarsformat och tar bort/ i GitHubs tooltips
 // @match        https://github.com/*
 // @run-at       document-start
 // @grant        none
@@ -28,7 +28,7 @@
   Intl.DateTimeFormat.prototype = OrigDateTimeFormat.prototype;
   Intl.DateTimeFormat.supportedLocalesOf = OrigDateTimeFormat.supportedLocalesOf;
 
-  // 2. Konvertera AM/PM till 24h och rensa bort GMT+1 / GMT+2 / UTC+1 etc.
+  // 2. Konvertera AM/PM till 24h och rensa bort / / etc.
   const ampmRegex = /\b(1[0-2]|0?[1-9])(?::([0-5]\d))?(?::([0-5]\d))?\s*(AM|PM)\b/gi;
   const tzRegex = /\s*(?:GMT|UTC)\s*[+-]\d{1,2}(?::\d{2})?\b/gi;
 
