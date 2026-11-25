@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         GitHub 24-Hour Tooltips
 // @namespace    https://github.com/
-// @version      1.0
+// @version      1.1
 // @description  Konverterar AM/PM till 24-timmarsformat och tar bort/ i GitHubs tooltips
 // @match        https://github.com/*
 // @run-at       document-start
