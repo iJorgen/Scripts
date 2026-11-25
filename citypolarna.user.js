@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Citypolarna Deluxe
 // @namespace    https://citypolarna.se
-// @version      1.9.11
+// @version      1.9.12
 // @description  OLED på alla sidor + färgläggning/gruppering/knapp bara på ren calendar.php
 // @author       Jörgen
 // @license      MIT
@@ -189,11 +189,13 @@
     createToggle();
 
     let runOnce = false;
+    let calendarObs = null;
+
     function runCalendar() {
       if (runOnce) return;
       runOnce = true;
 
-      if (typeof calendarObs !== 'undefined') calendarObs.disconnect();
+      if (calendarObs) calendarObs.disconnect();
 
       colorAllVisible();
       applyGrouping();
@@ -203,7 +205,7 @@
     let lastCount = 0;
     let stableFrames = 0;
 
-    const calendarObs = new MutationObserver(() => {
+    calendarObs = new MutationObserver(() => {
       const count = document.querySelectorAll(
         'table.event_row_table.open, table.event_row_table.plus_event, table.event_row_table.private, table.event_row_table.tips_event, table.event_row_table.draft'
       ).length;
